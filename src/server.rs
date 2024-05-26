@@ -17,6 +17,7 @@ pub struct Backend {
 #[derive(Debug, Default, Clone)]
 pub struct State {
     pub custom_funcs: Vec<String>,
+    pub custom_vars: Vec<String>,
 }
 
 #[tower_lsp::async_trait]
@@ -143,7 +144,10 @@ impl Backend {
 
     async fn update_custom_funcs(&self, text: String) {
         let function_re = Regex::new(r"(?m)^function\s+(\w+)").unwrap();
+        let variable_re = Regex::new(r"(?m)^set\s+(\w+)\s+").unwrap();
+
         let mut custom_functions = Vec::new();
+        let mut custom_variables = Vec::new();
 
         for cap in function_re.captures_iter(&text) {
             if let Some(function_name) = cap.get(1) {
@@ -151,8 +155,15 @@ impl Backend {
             }
         }
 
+        for cap in variable_re.captures_iter(&text) {
+            if let Some(variable_name) = cap.get(1) {
+                custom_variables.push(variable_name.as_str().to_string());
+            }
+        }
+
         let mut state = self.state.write().await;
         state.custom_funcs = custom_functions;
+        state.custom_vars = custom_variables;
     }
 }
 
